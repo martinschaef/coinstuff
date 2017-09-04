@@ -6,9 +6,12 @@ from secret_keys import key, b64secret, sbkey, sbsecret, passphrase
 
 from decimal import *
 
+total_buy_orders = 0
+total_sell_orders = 0
+
 auth_client = None
 products = ['ETH-USD', 'BTC-USD', 'LTC-USD']
-if False:
+if True:
   # Set a default product
   auth_client = gdax.AuthenticatedClient(key, b64secret, passphrase)
 else:
@@ -129,7 +132,7 @@ try:
     if next_buy_amount>Decimal(MAX_BUY_ORDER):      #!!!!!!!!!!!!!!!!
       next_buy_amount = Decimal(MAX_BUY_ORDER)
       print ("... maxing order at {}".format(next_buy_amount)) 
-    print("Available: {} USD. Max {} orders at {}".format(total_usd, total_sell, next_buy_amount))
+    print("USD {} available. Max {} orders at {}".format(total_usd, total_sell, next_buy_amount))
 
 
 
@@ -156,33 +159,37 @@ try:
       current_rate = Decimal(ticker["price"])
       # check if we have a completed order in the history
       if account_details[currency] and "side" in account_details[currency]:
+        bought_rate = Decimal(account_details[currency]["rate"])          
+        balance = Decimal(account_details[currency]["balance"]) * Decimal(0.95)
+        print(">>{} {}\t bought at {}\t. currenlty at: {}".format(currency, balance, bought_rate, current_rate))
+
         if account_details[currency]["side"]=="buy":
-          bought_rate = Decimal(account_details[currency]["rate"])          
-          balance = Decimal(account_details[currency]["balance"])
-          print("Have {} {}\t bought at {}\t can sell at {}".format(balance, currency, bought_rate, current_rate))
-
           change = (current_rate / bought_rate * Decimal(100)) - Decimal(100)
-          print ("Value change: {}".format(change))
+          SELL_AT_PERCENT=Decimal(2.0) #!!!!!!!!!!!!!!!!
 
-          SELL_AT_PERCENT=5 #!!!!!!!!!!!!!!!!
+          print ("\tNext order is sell. Value change: {0:.2f} selling at {1:.2f}".format(change,SELL_AT_PERCENT))
 
           if change>SELL_AT_PERCENT:
+            #print("Balance {}",format(balance))
+            #sys.exit(0)
             response = auth_client.sell(type="market", size="{0:.4f}".format(balance), product_id=product)
             print ("Sell sell sell: {}".format(response))
-
+            total_sell_orders +=1
         elif account_details[currency]["side"]=="sell":          
           low = Decimal(daily["low"])
           high = Decimal(daily["high"])
-          middle = low + (high-low)/Decimal(2)
-          print("High {}, Middle {}, Low {}, Current {}".format(high,middle, low, current_rate))
+          middle = low + (high-low)*Decimal(0.75)
+          print("\tNext order is buy. Buying below {}".format(middle))
           if current_rate<middle:
             buy_amount = Decimal(next_buy_amount)/Decimal(current_rate)*Decimal(0.9)
             response = auth_client.buy(type="market", size=str("{0:.4f}".format(buy_amount)), product_id=product)
             print("Buy buy buy {}".format(response))
+            total_buy_orders+=1
 
         else:
           pass
-    time.sleep(3)
+    print("Total orders: buy {} \t sell {}".format(total_buy_orders, total_sell_orders))
+    time.sleep(5)
     #break
 except KeyboardInterrupt:  
   pass
