@@ -157,23 +157,25 @@ try:
       # check if we have a completed order in the history
       if account_details[currency] and "side" in account_details[currency]:
         bought_rate = Decimal(account_details[currency]["rate"])          
-        balance = Decimal(account_details[currency]["balance"])
+        balance = Decimal(account_details[currency]["balance"]) * Decimal(0.95)
         print(">>{} {}\t bought at {}\t. currenlty at: {}".format(currency, balance, bought_rate, current_rate))
 
         if account_details[currency]["side"]=="buy":
           change = (current_rate / bought_rate * Decimal(100)) - Decimal(100)
-          SELL_AT_PERCENT=5 #!!!!!!!!!!!!!!!!
+          SELL_AT_PERCENT=Decimal(2.0) #!!!!!!!!!!!!!!!!
 
-          print ("\tNext order is sell. Value change: {} selling at {}".format(change,SELL_AT_PERCENT))
+          print ("\tNext order is sell. Value change: {0:.2f} selling at {1:.2f}".format(change,SELL_AT_PERCENT))
 
           if change>SELL_AT_PERCENT:
+            #print("Balance {}",format(balance))
+            #sys.exit(0)
             response = auth_client.sell(type="market", size="{0:.4f}".format(balance), product_id=product)
             print ("Sell sell sell: {}".format(response))
 
         elif account_details[currency]["side"]=="sell":          
           low = Decimal(daily["low"])
           high = Decimal(daily["high"])
-          middle = low + (high-low)/Decimal(2)
+          middle = low + (high-low)*Decimal(0.75)
           print("\tNext order is buy. Buying below {}".format(middle))
           if current_rate<middle:
             buy_amount = Decimal(next_buy_amount)/Decimal(current_rate)*Decimal(0.9)
