@@ -8,7 +8,7 @@ from decimal import *
 
 auth_client = None
 products = ['ETH-USD', 'BTC-USD', 'LTC-USD']
-if False:
+if True:
   # Set a default product
   auth_client = gdax.AuthenticatedClient(key, b64secret, passphrase)
 else:
@@ -129,7 +129,7 @@ try:
     if next_buy_amount>Decimal(MAX_BUY_ORDER):      #!!!!!!!!!!!!!!!!
       next_buy_amount = Decimal(MAX_BUY_ORDER)
       print ("... maxing order at {}".format(next_buy_amount)) 
-    print("Available: {} USD. Max {} orders at {}".format(total_usd, total_sell, next_buy_amount))
+    print("USD {} available. Max {} orders at {}".format(total_usd, total_sell, next_buy_amount))
 
 
 
@@ -156,15 +156,15 @@ try:
       current_rate = Decimal(ticker["price"])
       # check if we have a completed order in the history
       if account_details[currency] and "side" in account_details[currency]:
+        bought_rate = Decimal(account_details[currency]["rate"])          
+        balance = Decimal(account_details[currency]["balance"])
+        print(">>{} {}\t bought at {}\t. currenlty at: {}".format(currency, balance, bought_rate, current_rate))
+
         if account_details[currency]["side"]=="buy":
-          bought_rate = Decimal(account_details[currency]["rate"])          
-          balance = Decimal(account_details[currency]["balance"])
-          print("Have {} {}\t bought at {}\t can sell at {}".format(balance, currency, bought_rate, current_rate))
-
           change = (current_rate / bought_rate * Decimal(100)) - Decimal(100)
-          print ("Value change: {}".format(change))
-
           SELL_AT_PERCENT=5 #!!!!!!!!!!!!!!!!
+
+          print ("\tNext order is sell. Value change: {} selling at {}".format(change,SELL_AT_PERCENT))
 
           if change>SELL_AT_PERCENT:
             response = auth_client.sell(type="market", size="{0:.4f}".format(balance), product_id=product)
@@ -174,7 +174,7 @@ try:
           low = Decimal(daily["low"])
           high = Decimal(daily["high"])
           middle = low + (high-low)/Decimal(2)
-          print("High {}, Middle {}, Low {}, Current {}".format(high,middle, low, current_rate))
+          print("\tNext order is buy. Buying below {}".format(middle))
           if current_rate<middle:
             buy_amount = Decimal(next_buy_amount)/Decimal(current_rate)*Decimal(0.9)
             response = auth_client.buy(type="market", size=str("{0:.4f}".format(buy_amount)), product_id=product)
@@ -182,7 +182,7 @@ try:
 
         else:
           pass
-    time.sleep(3)
+    time.sleep(10)
     #break
 except KeyboardInterrupt:  
   pass
