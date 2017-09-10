@@ -200,7 +200,7 @@ while True:
           else:
             pass
       print("Total orders: buy {} \t sell {}".format(total_buy_orders, total_sell_orders))
-      time.sleep(5)
+      time.sleep(20)
       #break
   except KeyboardInterrupt:  
     break
