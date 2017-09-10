@@ -6,6 +6,9 @@ from secret_keys import key, b64secret, sbkey, sbsecret, passphrase
 
 from decimal import *
 
+total_buy_orders = 0
+total_sell_orders = 0
+
 auth_client = None
 products = ['ETH-USD', 'BTC-USD', 'LTC-USD']
 if True:
@@ -159,9 +162,9 @@ try:
         bought_rate = Decimal(account_details[currency]["rate"])          
         balance = Decimal(account_details[currency]["balance"]) * Decimal(0.95)
         print(">>{} {}\t bought at {}\t. currenlty at: {}".format(currency, balance, bought_rate, current_rate))
+        change = (current_rate / bought_rate * Decimal(100)) - Decimal(100)
 
         if account_details[currency]["side"]=="buy":
-          change = (current_rate / bought_rate * Decimal(100)) - Decimal(100)
           SELL_AT_PERCENT=Decimal(2.0) #!!!!!!!!!!!!!!!!
 
           print ("\tNext order is sell. Value change: {0:.2f} selling at {1:.2f}".format(change,SELL_AT_PERCENT))
@@ -171,20 +174,22 @@ try:
             #sys.exit(0)
             response = auth_client.sell(type="market", size="{0:.4f}".format(balance), product_id=product)
             print ("Sell sell sell: {}".format(response))
-
+            total_sell_orders +=1
         elif account_details[currency]["side"]=="sell":          
           low = Decimal(daily["low"])
           high = Decimal(daily["high"])
           middle = low + (high-low)*Decimal(0.75)
           print("\tNext order is buy. Buying below {}".format(middle))
-          if current_rate<middle:
+          if current_rate<middle or change<Decimal(-5.0):
             buy_amount = Decimal(next_buy_amount)/Decimal(current_rate)*Decimal(0.9)
             response = auth_client.buy(type="market", size=str("{0:.4f}".format(buy_amount)), product_id=product)
             print("Buy buy buy {}".format(response))
+            total_buy_orders+=1
 
         else:
           pass
-    time.sleep(10)
+    print("Total orders: buy {} \t sell {}".format(total_buy_orders, total_sell_orders))
+    time.sleep(5)
     #break
 except KeyboardInterrupt:  
   pass
