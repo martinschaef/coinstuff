@@ -174,7 +174,12 @@ def make_selling_decision(product, currency, daily, market_change):
     # if a order has been closed, removed it, and issue a new sell order with 10% markup
     closed_order = None
     for open_order in open_orders[product]:
-      order_details = auth_client.get_order(open_order["id"])
+      order_details = None
+      try 
+        order_details = auth_client.get_order(open_order["id"])
+      except:
+        print ("Order not found {}".format(open_order))
+        pass
       if order_details and order_details["status"] == "done" and order_details["done_reason"]=="filled":
         closed_order = open_order
         # Issue a new sell order
