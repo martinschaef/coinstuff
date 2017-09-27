@@ -15,9 +15,9 @@ SELL_MARKUP = Decimal(1.1)
 BUY_MARKUP = Decimal(0.95)
 
 MAX_USD_VOLUMES = {
-  "ETH-USD": 300.00,
-  "BTC-USD": 300.00,
-  "LTC-USD": 300.00
+  "ETH-USD": 200.00,
+  "BTC-USD": 200.00,
+  "LTC-USD": 200.00
 }
 
 MIN_COIN_VOLUMES = {
@@ -175,7 +175,7 @@ def make_selling_decision(product, currency, daily, market_change):
     closed_order = None
     for open_order in open_orders[product]:
       order_details = None
-      try 
+      try: 
         order_details = auth_client.get_order(open_order["id"])
       except:
         print ("Order not found {}".format(open_order))
@@ -184,8 +184,8 @@ def make_selling_decision(product, currency, daily, market_change):
         closed_order = open_order
         # Issue a new sell order
         new_price = Decimal(order_details["price"]) * SELL_MARKUP
-
-        print ("** sell {0:.4f} {1} at ${2:.2f}}".format(Decimal(order_details["size"]), currency, new_price))
+        #print ("Order Details: {}".format(order_details))
+        print ("** sell {0:.4f} {1} at ${2:.2f}".format(Decimal(order_details["size"]), currency, new_price))
         response = auth_client.sell(type="limit", 
                                     size="{0:.4f}".format(Decimal(order_details["size"])),
                                     price="{0:.2f}".format(new_price),
@@ -198,7 +198,7 @@ def make_selling_decision(product, currency, daily, market_change):
     else:
       open_orders[product].remove(closed_order)
       return True
-
+  print("\tNothing to sell at current rate.")
   return False
 
 
@@ -256,7 +256,7 @@ while True:
     print ("Open BTC orders: {}".format(len(open_orders["BTC-USD"])))
     print ("Open LTC orders: {}".format(len(open_orders["LTC-USD"])))
     print ("Open ETH orders: {}".format(len(open_orders["ETH-USD"])))
-    break
+    #break
 
     while True:    
       account_data = auth_client.get_accounts()
@@ -292,7 +292,7 @@ while True:
         print ("\t24h Open: {0:.2f}".format(float(daily["open"])))
         print ("\t24h Trend: {0:.2f}".format(float(daily_change)))
 
-        if usd_volume < Decimal(MAX_USD_VOLUMES[product]):
+        if usd_volume <= Decimal(MAX_USD_VOLUMES[product]):
           successful = make_buying_decision(product, currency, daily, available_volume, total_usd)          
           if successful == True:
             # print ("Only trade one coin per round. Otherwise we'd have to update the usd balance")
@@ -300,7 +300,7 @@ while True:
         else:
           print ("\tNot buying because already have {0:.2f} usd of {1}".format(usd_volume, currency))
 
-        if available_volume-Decimal(MIN_USD) > Decimal(MIN_COIN_VOLUMES[product]):
+        if available_volume >= Decimal(MIN_COIN_VOLUMES[product]):
           successful = make_selling_decision(product, currency, daily, available_volume)
           if successful == True:
             break
@@ -311,6 +311,7 @@ while True:
 
       print ("Total USD balance: {}".format(total_usd))
       print ("Total Coin balance: {}".format(total_coin_usd))
+      print ("\t Orders: buy {} \tsell {}".format(total_buy_orders, total_sell_orders))
       print (".... sleeping for {}sec ...".format(TIME_DELTA.seconds))
       time.sleep(float(TIME_DELTA.seconds))
 
