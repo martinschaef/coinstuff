@@ -8,6 +8,8 @@ install_requires = [
     'six==1.10.0',
     'websocket-client==0.40.0',
     'gdax==1.0.6'
+    'pandas==0.22.0'
+    'pandas-datareader==0.5.0'
 ]
 
 tests_require = [
